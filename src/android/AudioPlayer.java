@@ -130,6 +130,16 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         return dir.getAbsolutePath() + File.separator + fileName;
     }
 
+    private boolean canPlaySound() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            android.app.NotificationManager notificationManager =
+                (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            int filter = notificationManager.getCurrentInterruptionFilter();
+            return filter == android.app.NotificationManasger.INTERRUPTION_FILTER_ALL;
+        }
+        return true;
+    }
+
     /**
      * Destroy player and stop audio playing or recording.
      */
@@ -351,9 +361,14 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     public void startPlaying(String file) {
         if (this.readyPlayer(file) && this.player != null) {
-            this.player.start();
-            this.setState(STATE.MEDIA_RUNNING);
-            this.seekOnPrepared = 0; //insures this is always reset
+            // DND check: only play if allowed
+            if (canPlaySound()) {
+                this.player.start();
+                this.setState(STATE.MEDIA_RUNNING);
+            } else {
+                LOG.d(LOG_TAG, "DND is active, skipping sound playback.");
+            }
+            this.seekOnPrepared = 0;
         } else {
             this.prepareOnly = false;
         }
