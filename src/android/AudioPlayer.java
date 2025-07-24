@@ -135,7 +135,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             android.app.NotificationManager notificationManager =
                 (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             int filter = notificationManager.getCurrentInterruptionFilter();
-            return filter == android.app.NotificationManasger.INTERRUPTION_FILTER_ALL;
+            return filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALL;
         }
         return true;
     }
