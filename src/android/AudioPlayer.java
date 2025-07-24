@@ -131,16 +131,17 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     private boolean canPlaySound() {
+        android.util.Log.e("AudioPlayer", "canPlaySound() called");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             android.app.NotificationManager notificationManager =
                 (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             int filter = notificationManager.getCurrentInterruptionFilter();
-            android.util.Log.d("AudioPlayer", "DND Filter: " + filter + " (INTERRUPTION_FILTER_ALL=" + android.app.NotificationManager.INTERRUPTION_FILTER_ALL + ")");
+            android.util.Log.e("AudioPlayer", "DND Filter: " + filter + " (INTERRUPTION_FILTER_ALL=" + android.app.NotificationManager.INTERRUPTION_FILTER_ALL + ")");
             boolean canPlay = filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALL;
-            android.util.Log.d("AudioPlayer", "Can play sound: " + canPlay);
+            android.util.Log.e("AudioPlayer", "Can play sound: " + canPlay);
             return canPlay;
         }
-        android.util.Log.d("AudioPlayer", "Device API < 23, allowing sound");
+        android.util.Log.e("AudioPlayer", "Device API < 23, allowing sound");
         return true;
     }
 
