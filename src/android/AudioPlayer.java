@@ -132,24 +132,15 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     private boolean canPlaySound() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            android.app.NotificationManager notificationManager =
-                (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            int filter = nm.getCurrentInterruptionFilter();
+            LOG.d(LOG_TAG, "Current DND interruption filter: " + filter);
 
-            int filter = notificationManager.getCurrentInterruptionFilter();
-            
-            switch (filter) {
-                case android.app.NotificationManager.INTERRUPTION_FILTER_ALL:
-                    return true;  // No restrictions (play sound)
-                case android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY:
-                case android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS:
-                case android.app.NotificationManager.INTERRUPTION_FILTER_NONE:
-                default:
-                    return false; // DND is active (mute sound)
-            }
+            return filter == NotificationManager.INTERRUPTION_FILTER_ALL;
         }
-        // For older devices, default to true
         return true;
     }
+
 
 
     /**
@@ -372,8 +363,12 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      * @param file              The name of the audio file.
      */
     public void startPlaying(String file) {
-        if (!canPlaySound()) {
-            LOG.d(LOG_TAG, "Playback blocked due to DND active");
+        boolean canPlay = canPlaySound();
+        LOG.d(LOG_TAG, "DND Check result: canPlaySound=" + canPlay);
+
+        if (!canPlay) {
+            LOG.d(LOG_TAG, "Playback aborted explicitly due to active DND");
+            sendErrorStatus(MEDIA_ERR_ABORTED, "Playback blocked by active DND");
             return;
         }
 
@@ -394,6 +389,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             this.prepareOnly = false;
         }
     }
+
 
 
     /**
