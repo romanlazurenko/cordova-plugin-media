@@ -131,19 +131,26 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     private boolean canPlaySound() {
-        android.util.Log.e("AudioPlayer", "canPlaySound() called");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             android.app.NotificationManager notificationManager =
                 (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
             int filter = notificationManager.getCurrentInterruptionFilter();
-            android.util.Log.e("AudioPlayer", "DND Filter: " + filter + " (INTERRUPTION_FILTER_ALL=" + android.app.NotificationManager.INTERRUPTION_FILTER_ALL + ")");
-            boolean canPlay = filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALL;
-            android.util.Log.e("AudioPlayer", "Can play sound: " + canPlay);
-            return canPlay;
+            
+            switch (filter) {
+                case android.app.NotificationManager.INTERRUPTION_FILTER_ALL:
+                    return true;  // No restrictions (play sound)
+                case android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY:
+                case android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS:
+                case android.app.NotificationManager.INTERRUPTION_FILTER_NONE:
+                default:
+                    return false; // DND is active (mute sound)
+            }
         }
-        android.util.Log.e("AudioPlayer", "Device API < 23, allowing sound");
+        // For older devices, default to true
         return true;
     }
+
 
     /**
      * Destroy player and stop audio playing or recording.
@@ -365,19 +372,29 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      * @param file              The name of the audio file.
      */
     public void startPlaying(String file) {
+        if (!canPlaySound()) {
+            LOG.d(LOG_TAG, "Playback blocked due to DND active");
+            return;
+        }
+
         if (this.readyPlayer(file) && this.player != null) {
-            // DND check: only play if allowed
-            if (canPlaySound()) {
-                this.player.start();
-                this.setState(STATE.MEDIA_RUNNING);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                player.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
             } else {
-                LOG.d(LOG_TAG, "DND is active, skipping sound playback.");
+                player.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
             }
+
+            this.player.start();
+            this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0;
         } else {
             this.prepareOnly = false;
         }
     }
+
 
     /**
      * Seek or jump to a new time in the track.
@@ -739,6 +756,14 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             }
                 this.setState(STATE.MEDIA_STARTING);
                 this.player.setOnPreparedListener(this);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    player.setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+                } else {
+                    player.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
+                }
                 this.player.prepare();
 
                 // Get duration
