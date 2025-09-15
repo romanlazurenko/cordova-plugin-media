@@ -27,6 +27,8 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.os.Build;
+import android.app.NotificationManager;
+import android.media.AudioAttributes;
 
 import org.apache.cordova.LOG;
 
